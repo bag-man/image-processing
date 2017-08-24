@@ -52,7 +52,7 @@ describe('ImageProcessor', () => {
     describe('getWebImage', () => {
         it('should get the web version of the image', (done) => {
             imageProcessor.getWebImage().then((data) => {
-                assert.deepEqual(data, { format: 'jpeg', width: 1200, height: 777, channels: 3, premultiplied: false, size: 126116 }, 'Image not processed correctly');
+                assert.deepEqual(data, { format: 'jpeg', width: 1200, height: 777, size: 126116, type: 'web', name: 'large.jpg-web' }, 'Web image not processed correctly');
                 done();
             });
         });
@@ -61,7 +61,7 @@ describe('ImageProcessor', () => {
     describe('getThumbnail', () => {
         it('should get the thumbnail version of the image', (done) => {
             imageProcessor.getThumbnail().then((data) => {
-                assert.deepEqual(data, { format: 'jpeg', width: 60, height: 60, channels: 3, premultiplied: false, size: 1102 }, 'Image not processed correctly');
+                assert.deepEqual(data, { format: 'jpeg', width: 60, height: 60, size: 1102, type: 'thumb', name: 'large.jpg-thumb' }, 'Thumbnail not processed correctly');
                 done();
             });
         });
@@ -69,7 +69,12 @@ describe('ImageProcessor', () => {
 
     describe('processImage', () => {
         it('should process a given image, and return object of results', (done) => {
-            imageProcessor.processImage().then(() => {
+            imageProcessor.processImage().then((data) => {
+                assert.deepEqual(data, {
+                    original: { name: 'large.jpg-original', format: 'jpeg', width: 4962, height: 3214, size: 16997262, type: 'original' },
+                    thumb: { format: 'jpeg', width: 60, height: 60, size: 1102, name: 'large.jpg-thumb', type: 'thumb' },
+                    web: { format: 'jpeg', width: 1200, height: 777, size: 126116, name: 'large.jpg-web', type: 'web' }
+                }, 'Incorrect values found');
                 done();
             });
         });

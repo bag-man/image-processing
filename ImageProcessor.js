@@ -5,22 +5,28 @@ sharp.cache(true);
 sharp.simd(true);
 
 class ImageProcessor {
-    constructor (imageBuffer, imageName) {
+    constructor (imageBuffer, name) {
         this.MAX_SIZE = 1200;
         this.THUMBNAIL = { width: 60, height: 60 };
-        this.images = { original: { buffer: imageBuffer }, thumnail: {}, web: {} };
-        this.imageBuffer = imageBuffer;
-        this.imageName = imageName;
+        this.images = {};
+        this.buffer = imageBuffer;
+        this.name = name;
     }
 
     findImageMeta () {
-        return sharp(this.imageBuffer).metadata().then((meta) => {
+        return sharp(this.buffer).metadata().then((meta) => {
             if (meta.width === undefined || meta.height === undefined) {
                 throw new TypeError('Image metadata could not be found.');
             } else {
                 this.meta = meta;
                 this.saveOriginal().then((filename) => {
-                    this.images.original.filename = filename;
+                    this.images.original = {};
+                    this.images.original.format = this.meta.format;
+                    this.images.original.width = this.meta.width;
+                    this.images.original.height = this.meta.height;
+                    this.images.original.size = this.buffer.byteLength;
+                    this.images.original.name = filename;
+                    this.images.original.type = 'original';
                 });
                 return meta;
             }
@@ -39,41 +45,65 @@ class ImageProcessor {
         return { height, width };
     }
 
-    resizeImage (width, height, prefix) {
-        return sharp(this.imageBuffer)
+    resizeImage (width, height, suffix) {
+        return sharp(this.buffer)
             .resize(width, height)
             .jpeg({ quality: 50 })
-            .toFile(this.imageName + '-' + prefix);
+            .toFile(this.name + '-' + suffix);
     }
 
     saveOriginal () {
-        let filename = this.imageName + '-original';
+        let filename = this.name + '-original';
 
         return new Promise((resolve, reject) => {
-            fs.writeFile(filename, this.imageBuffer, 'buffer', (err) => {
+            fs.writeFile(filename, this.buffer, 'buffer', (err) => {
                 if (err) { reject(err); }
                 resolve(filename);
             });
         });
     }
 
+    trimImageObject (image, suffix) {
+        image.name = this.name + '-' + suffix;
+        image.type = suffix;
+        delete image.channels;
+        delete image.premultiplied;
+        return image;
+    }
+
     getWebImage () {
         return this.findImageMeta().then(() => {
+            let suffix = 'web';
             let { height, width } = this.getWebImageDimensions(this.meta.height, this.meta.width);
-            return this.resizeImage(width, height, 'web');
+            return this.resizeImage(width, height, 'web').then((image) => {
+                return this.trimImageObject(image, suffix);
+            });
         });
     }
 
     getThumbnail() {
-        return this.resizeImage(this.THUMBNAIL.width, this.THUMBNAIL.height, 'thumb');
+        let suffix = 'thumb';
+        return this.resizeImage(this.THUMBNAIL.width, this.THUMBNAIL.height, 'thumb').then((image) => {
+            return this.trimImageObject(image, suffix);
+        });
     }
 
     processImage () {
         return Promise.all([ this.getThumbnail(), this.getWebImage() ]).then((images) => {
-            this.images = images;
-            return { meta: this.meta, images: this.images };
+            images.forEach((image) => {
+                this.images[image.type] = image;
+            });
+            return this.images;
         });
     }
 }
 
 module.exports = ImageProcessor;
+
+// fs.readFile('./large.jpg', (err, imageBuffer) => {
+//     let imageProcessor = new ImageProcessor(imageBuffer, 'large.jpg');
+
+//     imageProcessor.processImage().then((images) => {
+//         console.log(images);
+//     });
+// });

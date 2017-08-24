@@ -12,10 +12,11 @@
     "mocha": "^3.4.2"
   },
   "scripts": {
-    "test": "./node_modules/.bin/eslint -f unix . && mocha",
+    "test": "./node_modules/.bin/eslint -f unix . && mocha && npm run clean",
     "test-watch": "mocha -w",
     "bisect": "git bisect run mocha",
-    "prepush": "npm run test"
+    "prepush": "npm run test",
+    "clean": "rm -rf large.jpg-*"
   },
   "author": "Owen Garland",
   "license": "MIT"
