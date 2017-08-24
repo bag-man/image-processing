@@ -5,20 +5,23 @@ sharp.cache(true);
 sharp.simd(true);
 
 class ImageProcessor {
-    constructor (imagePath) {
+    constructor (imageBuffer, imageName) {
         this.MAX_SIZE = 1200;
         this.THUMBNAIL = { width: 60, height: 60 };
-        this.imagePath = imagePath;
-        this.images = { original: {}, thumnail: {}, web: {} };
+        this.images = { original: { buffer: imageBuffer }, thumnail: {}, web: {} };
+        this.imageBuffer = imageBuffer;
+        this.imageName = imageName;
     }
 
     findImageMeta () {
-        return sharp(this.imagePath).metadata().then((meta) => {
+        return sharp(this.imageBuffer).metadata().then((meta) => {
             if (meta.width === undefined || meta.height === undefined) {
                 throw new TypeError('Image metadata could not be found.');
             } else {
                 this.meta = meta;
-                this.saveOriginal();
+                this.saveOriginal().then((filename) => {
+                    this.images.original.filename = filename;
+                });
                 return meta;
             }
         });
@@ -37,21 +40,21 @@ class ImageProcessor {
     }
 
     resizeImage (width, height, prefix) {
-        return sharp(this.imagePath)
+        return sharp(this.imageBuffer)
             .resize(width, height)
             .jpeg({ quality: 50 })
-            .toFile(this.imagePath + '-' + prefix);
+            .toFile(this.imageName + '-' + prefix);
     }
 
     saveOriginal () {
-        fs.readFile(this.imagePath, (err, imageBuffer) => {
-            if (err) throw err;
-            let fileName = this.imagePath + '-original';
-            fs.writeFile(fileName, imageBuffer, 'binary', () => {
-                if (err) throw err;
-                this.images.original.name = fileName;
-            })
-        })
+        let filename = this.imageName + '-original';
+
+        return new Promise((resolve, reject) => {
+            fs.writeFile(filename, this.imageBuffer, 'buffer', (err) => {
+                if (err) { reject(err); }
+                resolve(filename);
+            });
+        });
     }
 
     getWebImage () {

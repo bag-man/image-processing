@@ -1,12 +1,17 @@
 const assert = require('assert');
+const fs = require('fs');
+
 const ImageProcessor = require('../ImageProcessor');
+const TEST_IMAGE = './large.jpg';
 
 describe('ImageProcessor', () => {
     let imageProcessor;
 
     beforeEach((done) => {
-        imageProcessor = new ImageProcessor('./large.jpg');
-        done();
+        fs.readFile(TEST_IMAGE, (err, imageBuffer) => {
+            imageProcessor = new ImageProcessor(imageBuffer, 'large.jpg');
+            done();
+        });
     });
 
     describe('getWebImageDimensions', () => {
@@ -37,8 +42,10 @@ describe('ImageProcessor', () => {
 
     describe('saveOriginal', () => {
         it('should save the original file', (done) => {
-            imageProcessor.saveOriginal();
-            done();
+            imageProcessor.saveOriginal().then((data) => {
+                assert.equal(data, 'large.jpg-original');
+                done();
+            });
         });
     });
 
@@ -62,7 +69,7 @@ describe('ImageProcessor', () => {
 
     describe('processImage', () => {
         it('should process a given image, and return object of results', (done) => {
-            imageProcessor.processImage().then((data) => {
+            imageProcessor.processImage().then(() => {
                 done();
             });
         });

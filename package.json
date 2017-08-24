@@ -7,14 +7,15 @@
     "sharp": "^0.18.2"
   },
   "devDependencies": {
+    "eslint": "^4.5.0",
     "husky": "^0.14.3",
     "mocha": "^3.4.2"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "./node_modules/.bin/eslint -f unix . && mocha",
     "test-watch": "mocha -w",
     "bisect": "git bisect run mocha",
-    "prepush": "mocha"
+    "prepush": "npm run test"
   },
   "author": "Owen Garland",
   "license": "MIT"
