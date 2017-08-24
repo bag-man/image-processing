@@ -14,7 +14,7 @@
     "test": "mocha",
     "test-watch": "mocha -w",
     "bisect": "git bisect run mocha",
-    "pre-push": "mocha"
+    "prepush": "mocha"
   },
   "author": "Owen Garland",
   "license": "MIT"
