@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+const sharp = require('sharp'); // 0.16 latest 0.10 compatible version, requires GLIBC >= 2.14
 const fs = require('fs');
 
 sharp.cache(true);
