@@ -44,7 +44,7 @@ class ImageProcessor {
     resizeImage (width, height, suffix) {
         return new Promise((resolve, reject) => {
             gm(this.buffer)
-                .resize(width, height)
+                .resize(width, height, '!') // This might need sorting
                 .write(this.name + '-' + suffix, (err, data) => {
                     if (err) { reject(err); }
                     resolve(data);
