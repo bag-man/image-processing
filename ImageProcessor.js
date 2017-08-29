@@ -47,6 +47,7 @@ class ImageProcessor {
                 .resize(width, height, '^')
                 .gravity('Center')
                 .crop(width, height)
+                .quality(60)
                 .write(this.name + '-' + suffix, (err, data) => {
                     if (err) { reject(err); }
                     resolve(data);
