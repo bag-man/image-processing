@@ -44,7 +44,9 @@ class ImageProcessor {
     resizeImage (width, height, suffix) {
         return new Promise((resolve, reject) => {
             gm(this.buffer)
-                .resize(width, height, '!') // This might need sorting
+                .resize(width, height, '^')
+                .gravity('Center')
+                .crop(width, height)
                 .write(this.name + '-' + suffix, (err, data) => {
                     if (err) { reject(err); }
                     resolve(data);
