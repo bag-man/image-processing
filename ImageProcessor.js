@@ -1,8 +1,5 @@
-const sharp = require('sharp'); // 0.16 latest 0.10 compatible version, requires GLIBC >= 2.14
+const gm = require('gm'); // depends on graphicsmagick (gm) which appears to be installed on our servers already
 const fs = require('fs');
-
-sharp.cache(true);
-sharp.simd(true);
 
 class ImageProcessor {
     constructor (imageBuffer, name) {
@@ -13,23 +10,22 @@ class ImageProcessor {
         this.name = name;
     }
 
-    findImageMeta () {
-        return sharp(this.buffer).metadata().then((meta) => {
-            if (meta.width === undefined || meta.height === undefined) {
-                throw new TypeError('Image metadata could not be found.');
-            } else {
-                this.meta = meta;
-                this.saveOriginal().then((filename) => {
-                    this.images.original = {};
-                    this.images.original.format = this.meta.format;
-                    this.images.original.width = this.meta.width;
-                    this.images.original.height = this.meta.height;
-                    this.images.original.size = this.buffer.byteLength;
-                    this.images.original.name = filename;
-                    this.images.original.type = 'original';
-                });
-                return meta;
-            }
+    getImageSize () {
+        return new Promise((resolve, reject) => {
+            gm(this.buffer).size((err, size) => {
+                if (err) { reject(err); }
+                if (size.width === undefined || size.height === undefined || err) {
+                    reject('Image metadata could not be found.', err);
+                } else {
+                    this.saveOriginal().then((filename) => {
+                        this.images.original = {};
+                        this.images.original.size = size;
+                        this.images.original.name = filename;
+                        this.images.original.type = 'original';
+                        resolve(size);
+                    });
+                }
+            });
         });
     }
 
@@ -46,10 +42,14 @@ class ImageProcessor {
     }
 
     resizeImage (width, height, suffix) {
-        return sharp(this.buffer)
-            .resize(width, height)
-            .jpeg({ quality: 50 })
-            .toFile(this.name + '-' + suffix);
+        return new Promise((resolve, reject) => {
+            gm(this.buffer)
+                .resize(width, height)
+                .write(this.name + '-' + suffix, (err, data) => {
+                    if (err) { reject(err); }
+                    resolve(data);
+                });
+        });
     }
 
     saveOriginal () {
@@ -63,28 +63,24 @@ class ImageProcessor {
         });
     }
 
-    trimImageObject (image, suffix) {
-        image.name = this.name + '-' + suffix;
-        image.type = suffix;
-        delete image.channels;
-        delete image.premultiplied;
-        return image;
+    createImageObject (size, suffix) {
+        return { type: suffix, size, name: this.name + '-' + suffix };
     }
 
     getWebImage () {
-        return this.findImageMeta().then(() => {
+        return this.getImageSize().then((size) => {
             let suffix = 'web';
-            let { height, width } = this.getWebImageDimensions(this.meta.height, this.meta.width);
-            return this.resizeImage(width, height, 'web').then((image) => {
-                return this.trimImageObject(image, suffix);
+            size = this.getWebImageDimensions(size.height, size.width);
+            return this.resizeImage(size.width, size.height, 'web').then(() => {
+                return this.createImageObject(size, suffix);
             });
         });
     }
 
     getThumbnail() {
         let suffix = 'thumb';
-        return this.resizeImage(this.THUMBNAIL.width, this.THUMBNAIL.height, 'thumb').then((image) => {
-            return this.trimImageObject(image, suffix);
+        return this.resizeImage(this.THUMBNAIL.width, this.THUMBNAIL.height, 'thumb').then(() => {
+            return this.createImageObject(this.THUMBNAIL, suffix);
         });
     }
 

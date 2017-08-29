@@ -4,6 +4,7 @@
   "description": "",
   "main": "ImageProcessor.js",
   "dependencies": {
+    "gm": "^1.23.0",
     "sharp": "^0.18.2"
   },
   "devDependencies": {
